@@ -20,6 +20,7 @@ def setup_driver():
     """Set up and return a headless Chrome WebDriver."""
     # Set up Chrome options
     chrome_options = Options()
+    chrome_options.add_argument("--log-level=0")  # Suppress All logs
     chrome_options.add_argument("--headless")  # Run Chrome in headless mode
     chrome_options.add_argument("--no-sandbox")  # (Optional) Disable sandboxing for better performance
     chrome_options.add_argument("--disable-dev-shm-usage")  # (Optional) Overcome limited resource problems
@@ -34,7 +35,8 @@ def setup_driver():
 
 def get_patent_PN_from_HTML_node(node_text, url):
     ''' 
-    Extracts patent Publication Numbers (PN) from the text of an HTML element and divide them 
+    This function is used inside the get_citations() function.
+    Extracts patent Publication Numbers (PN) from the text of the HTML element of citations and divide them 
     into two lists: those added by the examiner (indicated by an asterisk *) and 
     those without the asterisk. The asterisk is removed before appending to the list.
     '''
@@ -155,7 +157,7 @@ def download_img(driver, url, filename, save_dir):
         return filepath
     
     except Exception as e:
-        print(f"Error downloading image from: {url}: {e}")
+        #print(f"Error downloading image from: {url}: {e}")
         return None
 
 

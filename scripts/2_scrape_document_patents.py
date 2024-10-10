@@ -36,9 +36,14 @@ def scrape_documents_from_query(json_file_path, front_imgs_dir, json_dir):
     
     # Open the json file for the patent query
     with open(json_file_path, 'r') as file:
-        patent_data = json.load(file)
-        citations_list = patent_data.get('citations_by_examiner') # Retrieve the list of patent IDs cited by the examiner.
-        
+        query_patent_ID = os.path.splitext(os.path.basename(json_file_path))[0]
+        query_patent_data = json.load(file)
+        citations_list = query_patent_data.get('citations_by_examiner') # Retrieve the list of patent IDs cited by the examiner.
+        print(f'Starting scraping citations for query: {query_patent_ID}')
+
+        # Initialize a counter to keep track of the number of document patents successfully retrieved
+        retrieved_patents_count = 0 
+
         # Iterate over each patent ID in the citations list
         for patent_ID in citations_list:
             # Construct the Google Patents URL for the specific patent
@@ -52,8 +57,8 @@ def scrape_documents_from_query(json_file_path, front_imgs_dir, json_dir):
                 # Ensure first claim, and front image are successfully retrieved
                 if fst_claim and front_img_path:
 
-                        # Create a dictionary to hold all the scraped data for this patent  
-                        patent_data = {
+                        # Create a dictionary to hold all the scraped data for this document patent  
+                        document_patent_data = {
                             "type": "document",
                             "CPC_class": CPC_class,
                             "query": json_file_path,
@@ -65,15 +70,28 @@ def scrape_documents_from_query(json_file_path, front_imgs_dir, json_dir):
                         json_filename = patent_ID + '.json'
                         json_filepath = os.path.join(json_dir_CPC, json_filename)
 
-                        # Write the patent data dictionary to a JSON file
+                        # Write the document patent data dictionary to a JSON file
                         with open(json_filepath, 'w') as json_file:
-                            json.dump(patent_data, json_file, indent=2)
-                            print(f'{patent_ID} successfully scraped.')
-
+                            json.dump(document_patent_data, json_file, indent=2)
+                            #print(f'{patent_ID} successfully scraped.')
+                        
+                        # Increment the count of successfully retrieved document patents
+                        retrieved_patents_count += 1
+            
             # Handle any exceptions that occur during scraping for a particular patent
             except Exception as e:
                 print(f"Error processing patent {patent_ID} from {url}: {e}")
+        
+        # After processing all the cited patents, update the query patent data with the count of successfully retrieved document patents
+        query_patent_data['document_patents_count'] = retrieved_patents_count
 
+        # Write the updated query patent data back to the original JSON file
+        with open(json_file_path, 'w') as file:
+            json.dump(query_patent_data, file, indent=2)
+            # Print a summary of the results, showing how many patents were successfully scraped fro a query patent
+            print(f"Updated document_patents_count to: {retrieved_patents_count}\t"
+                f"{retrieved_patents_count}/{len(citations_list)}\t"
+                f"{retrieved_patents_count * 100 / len(citations_list):.2f}%")
 
 if __name__ == "__main__":
 
