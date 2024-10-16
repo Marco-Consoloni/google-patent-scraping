@@ -1,7 +1,8 @@
 import os
 import json
 import argparse
-from scraping_functions import setup_driver, get_citations, get_first_claim, download_img
+from scraping_functions import setup_driver, get_citations, get_title, get_abstract, get_CPC_classes, get_first_claim, download_img
+
 
 
 def scrape_queries_from_CPC(CPC_file_path, front_imgs_dir, json_dir):
@@ -48,16 +49,21 @@ def scrape_queries_from_CPC(CPC_file_path, front_imgs_dir, json_dir):
                     try:
                         # Scrape patent data 
                         citations_by_examiner, citations = get_citations(driver, url)
+                        title = get_title(driver, url)
+                        abstract = get_abstract(driver, url)
+                        CPC_classes = get_CPC_classes(driver, url)
                         fst_claim = get_first_claim(driver, url)
                         front_img_path = download_img(driver, url, filename=patent_ID, save_dir=front_imgs_dir_CPC)
 
-                        # Ensure that citations by examiner, first claim, and front image are successfully retrieved
-                        if len(citations_by_examiner) != 0 and fst_claim and front_img_path:
+                        # Ensure that citations by examiner and other patent data are succefully retrieved
+                        if all([len(citations_by_examiner)!=0, title, abstract, fst_claim, CPC_classes, front_img_path]):
 
-                            # Create a dictionary to hold all the scraped data for this patent  
                             patent_data = {
                                 "type": "query",
-                                "CPC_class": CPC_class,
+                                "class": CPC_class,
+                                "title": title,
+                                "abstract": abstract,
+                                "CPC_class": CPC_classes,
                                 "citations_by_examiner": citations_by_examiner,
                                 "citations": citations,
                                 "all_citations": citations_by_examiner + citations,
@@ -92,7 +98,7 @@ if __name__ == "__main__":
                         help='Directory to save front images.')
     parser.add_argument('--json_dir', type=str, default='/vast/marco/Data_Google_Patent/json/query',
                         help='Directory to save JSON files.')
-    parser.add_argument('--CPC_to_exclude', type=list, default=['A42B3.txt', 'A62B18.txt', 'F04D17.txt', 'F16H1.txt', 'F16L1.txt'],
+    parser.add_argument('--CPC_to_exclude', type=list, default=['A42B3.txt', 'A62B18.txt', 'F04D17.txt', 'F16H1.txt', 'F16L1.txt', 'G02C5.txt'],
                         help='CPC file to exclude when resuming scraping.')
 
     args = parser.parse_args()  # Parse command-line arguments.

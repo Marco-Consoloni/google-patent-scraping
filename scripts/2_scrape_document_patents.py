@@ -1,7 +1,7 @@
 import os
 import json
 import argparse
-from scraping_functions import setup_driver, get_first_claim, download_img
+from scraping_functions import setup_driver, get_title, get_abstract, get_CPC_classes, get_first_claim, download_img
 
 
 def scrape_documents_from_query(json_file_path, front_imgs_dir, json_dir): 
@@ -51,17 +51,23 @@ def scrape_documents_from_query(json_file_path, front_imgs_dir, json_dir):
 
             try:
                 # Scrape patent data 
+                title = get_title(driver, url)
+                abstract = get_abstract(driver, url)
+                CPC_classes = get_CPC_classes(driver, url)
                 fst_claim = get_first_claim(driver, url)
                 front_img_path = download_img(driver, url, filename=patent_ID, save_dir=front_imgs_dir_CPC)
 
                 # Ensure first claim, and front image are successfully retrieved
-                if fst_claim and front_img_path:
+                if all([title, abstract, fst_claim, CPC_classes, front_img_path]):
 
                         # Create a dictionary to hold all the scraped data for this document patent  
                         document_patent_data = {
                             "type": "document",
-                            "CPC_class": CPC_class,
                             "query": json_file_path,
+                            "class": CPC_class,
+                            "title": title,
+                            "abstract": abstract,
+                            "CPC_class": CPC_classes,
                             "first_claim": fst_claim,
                             "front_img": front_img_path 
                         }
@@ -89,7 +95,7 @@ def scrape_documents_from_query(json_file_path, front_imgs_dir, json_dir):
         with open(json_file_path, 'w') as file:
             json.dump(query_patent_data, file, indent=2)
             # Print a summary of the results, showing how many patents were successfully scraped fro a query patent
-            print(f"Updated document_patents_count to: {retrieved_patents_count}\t"
+            print(f"document_patents_count is: {retrieved_patents_count}\t"
                 f"{retrieved_patents_count}/{len(citations_list)}\t"
                 f"{retrieved_patents_count * 100 / len(citations_list):.2f}%")
 
@@ -103,6 +109,8 @@ if __name__ == "__main__":
                         help='Directory to save front images.')
     parser.add_argument('--json_dir_output', type=str, default='/vast/marco/Data_Google_Patent/json/document',
                         help='Directory to save JSON files.')
+    #parser.add_argument('--CPC_to_exclude', type=list, default=[],
+    #                    help='CPC file to exclude when resuming scraping.')
 
     args = parser.parse_args()  # Parse command-line arguments.
 
