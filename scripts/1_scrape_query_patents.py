@@ -38,38 +38,44 @@ def scrape_queries_from_CPC(CPC_file_path, front_imgs_dir, json_dir):
                 patent_ID = line.replace(" ", "").strip()  # Clean the patent ID by removing spaces and line breaks
                 # Construct the Google Patents URL for the specific patent
                 url = f"https://patents.google.com/patent/{patent_ID}/en?oq={patent_ID}" 
+                # Create  json file path
+                json_filename = patent_ID + '.json'
+                json_filepath = os.path.join(json_dir_CPC, json_filename)
 
-                try:
-                    # Scrape patent data 
-                    citations_by_examiner, citations = get_citations(driver, url)
-                    fst_claim = get_first_claim(driver, url)
-                    front_img_path = download_img(driver, url, filename=patent_ID, save_dir=front_imgs_dir_CPC)
+                # Ensure patent ID has not been scraped.
+                if not os.path.exists(json_filepath):
 
-                    # Ensure that citations by examiner, first claim, and front image are successfully retrieved
-                    if len(citations_by_examiner) != 0 and fst_claim and front_img_path:
+                    try:
+                        # Scrape patent data 
+                        citations_by_examiner, citations = get_citations(driver, url)
+                        fst_claim = get_first_claim(driver, url)
+                        front_img_path = download_img(driver, url, filename=patent_ID, save_dir=front_imgs_dir_CPC)
 
-                        # Create a dictionary to hold all the scraped data for this patent  
-                        patent_data = {
-                            "type": "query",
-                            "CPC_class": CPC_class,
-                            "citations_by_examiner": citations_by_examiner,
-                            "citations": citations,
-                            "all_citations": citations_by_examiner + citations,
-                            "first_claim": fst_claim,
-                            "front_img": front_img_path 
-                        }
-                        
-                        json_filename = patent_ID + '.json'
-                        json_filepath = os.path.join(json_dir_CPC, json_filename)
+                        # Ensure that citations by examiner, first claim, and front image are successfully retrieved
+                        if len(citations_by_examiner) != 0 and fst_claim and front_img_path:
 
-                        # Write the patent data dictionary to a JSON file
-                        with open(json_filepath, 'w') as json_file:
-                            json.dump(patent_data, json_file, indent=2)
-                            print(f'{patent_ID} successfully scraped.')
+                            # Create a dictionary to hold all the scraped data for this patent  
+                            patent_data = {
+                                "type": "query",
+                                "CPC_class": CPC_class,
+                                "citations_by_examiner": citations_by_examiner,
+                                "citations": citations,
+                                "all_citations": citations_by_examiner + citations,
+                                "first_claim": fst_claim,
+                                "front_img": front_img_path 
+                            }
+                            
+                            # Write the patent data dictionary to a JSON file
+                            with open(json_filepath, 'w') as json_file:
+                                json.dump(patent_data, json_file, indent=2)
+                                print(f'{patent_ID} successfully scraped.')
 
-                # Handle any exceptions that occur during scraping for a particular patent
-                except Exception as e:
-                    print(f"Error processing patent {patent_ID} from {url}: {e}")
+                    # Handle any exceptions that occur during scraping for a particular patent
+                    except Exception as e:
+                        print(f"Error processing patent {patent_ID} from {url}: {e}")
+
+                else:
+                    print(f"Patent ID {patent_ID} already scraped.")
 
     # Ensure driver is closed after processing is complete
     finally:
@@ -86,6 +92,8 @@ if __name__ == "__main__":
                         help='Directory to save front images.')
     parser.add_argument('--json_dir', type=str, default='/vast/marco/Data_Google_Patent/json/query',
                         help='Directory to save JSON files.')
+    parser.add_argument('--CPC_to_exclude', type=list, default=['A42B3.txt', 'A62B18.txt', 'F04D17.txt', 'F16H1.txt', 'F16L1.txt'],
+                        help='CPC file to exclude when resuming scraping.')
 
     args = parser.parse_args()  # Parse command-line arguments.
 
@@ -93,10 +101,13 @@ if __name__ == "__main__":
     # Then iterate over the CPC files (each file corresponds to a specific CPC class).
     CPC_files = os.listdir(args.CPC_class_dir)
     for CPC_file in CPC_files:
-        CPC_file_path = os.path.join(args.CPC_class_dir, CPC_file)
-        print(f'Starting the scraping process for CPC: {CPC_file} -------------------')
-        scrape_queries_from_CPC(CPC_file_path, args.front_imgs_dir, args.json_dir)
-        print(f'Completed scraping process for CPC: {CPC_file} ----------------------')
+        if CPC_file not in args.CPC_to_exclude:
+            CPC_file_path = os.path.join(args.CPC_class_dir, CPC_file)
+            print(f'Starting the scraping process for CPC: {CPC_file} -------------------')
+            scrape_queries_from_CPC(CPC_file_path, args.front_imgs_dir, args.json_dir)
+            print(f'Completed scraping process for CPC: {CPC_file} ----------------------')
+        else:
+            print(f'CPC file: {CPC_file} already scraped.')
 
 
 
