@@ -97,11 +97,11 @@ if __name__ == "__main__":
 
     # Set up argument parser
     parser = argparse.ArgumentParser(description='Scrape Google Patents and save patent data for documents as JSON.')
-    parser.add_argument('--json_dir_input', type=str, default=r'C:\Users\acer\Desktop\Google_Patent_Scraping\json\query',
+    parser.add_argument('--json_dir_input', type=str, default='/vast/marco/Data_Google_Patent/json/query',
                         help='Directory to read JSON files.')
-    parser.add_argument('--front_imgs_dir', type=str, default=r'C:\Users\acer\Desktop\Google_Patent_Scraping\front_imgs\document',
+    parser.add_argument('--front_imgs_dir', type=str, default='/vast/marco/Data_Google_Patent/front_imgs/document',
                         help='Directory to save front images.')
-    parser.add_argument('--json_dir_output', type=str, default=r'C:\Users\acer\Desktop\Google_Patent_Scraping\json\document',
+    parser.add_argument('--json_dir_output', type=str, default='/vast/marco/Data_Google_Patent/json/document',
                         help='Directory to save JSON files.')
 
     args = parser.parse_args()  # Parse command-line arguments.

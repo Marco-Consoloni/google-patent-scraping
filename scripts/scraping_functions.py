@@ -3,34 +3,49 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
 import re
 import os
 import requests
 
-# Xpath to relevant sections
-#xpath_patent_footer = '/html/body/search-app/search-result/search-ui/div/div/div/div/div/result-container/patent-result/div/div/div/div[3]'
-#xpath_cited_by = '/html/body/search-app/search-result/search-ui/div/div/div/div/div/result-container/patent-result/div/div/div/div[3]/div[3]'
-#xpath_similar_document = '/html/body/search-app/search-result/search-ui/div/div/div/div/div/result-container/patent-result/div/div/div/div[3]/div[5]'
+# To use Firefox driver
+from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.firefox.service import Service
 
+# To use Google Chorme driver
+#from selenium.webdriver.chrome.service import Service
+#from selenium.webdriver.chrome.options import Options
+#from webdriver_manager.chrome import ChromeDriverManager
 
 def setup_driver():
+
+    """Set up and return a headless Firefox WebDriver."""
+    # Initialize FirefoxOptions
+    firefox_options = Options()
+    firefox_path = "/usr/bin/firefox"  # Set the path to the Firefox binary
+    firefox_options.binary_location = firefox_path  # Set Firefox as the binary
+    firefox_options.add_argument("--headless")  # Run Firefox in headless mode
+    firefox_options.add_argument("--log-level=0")  # Suppress all logs (equivalent logging level for Firefox)
+    firefox_options.add_argument("--disable-web-security")  # Optional: might help with web security issues
+    firefox_options.add_argument("--no-sandbox")  # Not supported in Firefox, will be ignored
+    firefox_options.add_argument("--disable-dev-shm-usage")  # Not needed for Firefox
+    service = Service(executable_path="/usr/bin/geckodriver")  # Path to the GeckoDriver executable
+    driver = webdriver.Firefox(service=service, options=firefox_options)
+
     """Set up and return a headless Chrome WebDriver."""
-    # Set up Chrome options
-    chrome_options = Options()
-    chrome_options.add_argument("--log-level=0")  # Suppress All logs
-    chrome_options.add_argument("--headless")  # Run Chrome in headless mode
-    chrome_options.add_argument("--no-sandbox")  # (Optional) Disable sandboxing for better performance
-    chrome_options.add_argument("--disable-dev-shm-usage")  # (Optional) Overcome limited resource problems
-    chrome_options.add_argument("--disable-web-security")  # This might help with shadow DOM
-    chrome_options.add_argument("--disable-features=site-per-process")  # This too
-
+    # Intitialize Chrome options
+    #chrome_options = Options()
+    #chrome_options.add_argument("--headless")  # Run Chrome in headless mode
+    #chrome_options.add_argument("--log-level=0")  # Suppress All logs
+    #chrome_options.add_argument("--disable-web-security")  # This might help with shadow DOM
+    #chrome_options.add_argument("--no-sandbox")  # (Optional) Disable sandboxing for better performance
+    #chrome_options.add_argument("--disable-dev-shm-usage")  # (Optional) Overcome limited resource problems
+    #chrome_options.add_argument("--disable-features=site-per-process")  # This too
+    
     # Create a WebDriver instance with the Service object and options
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
-    return driver
+    #service=Service(ChromeDriverManager().install())
+    #driver = webdriver.Chrome(service=service, options=chrome_options)
 
+    return driver
 
 
 def get_patent_PN_from_HTML_node(node_text, url):
