@@ -16,6 +16,7 @@ from selenium.webdriver.firefox.service import Service
 #from selenium.webdriver.chrome.options import Options
 #from webdriver_manager.chrome import ChromeDriverManager
 
+
 def setup_driver():
 
     """Set up and return a headless Firefox WebDriver."""
@@ -44,8 +45,8 @@ def setup_driver():
     # Create a WebDriver instance with the Service object and options
     #service=Service(ChromeDriverManager().install())
     #driver = webdriver.Chrome(service=service, options=chrome_options)
-
     return driver
+
 
 
 def get_patent_PN_from_HTML_node(node_text, url):
@@ -72,7 +73,7 @@ def get_patent_PN_from_HTML_node(node_text, url):
                     citations.append(patent_PN)
         return citations_by_examiner, citations
     except Exception as e:
-        print(f"Error processing HTML element  of {url}: {e}")
+        print(f"Error processing HTML element for citations of {url}: {e}")
         return None
 
 
@@ -97,6 +98,44 @@ def get_citations(driver, url):
 
 
 
+def get_title(driver, url):
+    '''
+    This function navigates to a given URL using a Selenium WebDriver, locates an HTML element containing 
+    the title text using XPath. If successful, the text of the title is extracted and returned.
+    '''
+    # Navigate to the given URL
+    driver.get(url)  
+    # Define the Xpath to point the HTML node where title text is contained.
+    xpath_title = '/html/body/search-app/search-result/search-ui/div/div/div/div/div/result-container/patent-result/div/div[1]/div/h1'
+    try:
+        title_node = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, xpath_title)))
+        title_text = title_node.text
+        return title_text.strip() if title_text else None
+    except Exception as e:
+        print(f"Error scraping title from {url}: {e}")
+        return None
+
+
+
+def get_abstract(driver, url):
+    '''
+    This function navigates to a given URL using a Selenium WebDriver, locates an HTML element containing 
+    the abstract text using XPath. If successful, the abstract is extracted and returned.
+    '''
+    # Navigate to the given URL
+    driver.get(url)  
+    # Define the Xpath to point the HTML node where title abstract is contained.
+    xpath_abstract = '/html/body/search-app/search-result/search-ui/div/div/div/div/div/result-container/patent-result/div/div/div/div[1]/div[1]/section[1]/patent-text/div/section/abstract/div'
+    try:
+        abstract_node = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, xpath_abstract)))
+        abstract_text = abstract_node.text
+        return abstract_text.strip() if abstract_text else None
+    except Exception as e:
+        print(f"Error scraping abstract from {url}: {e}")
+        return None
+
+
+
 def get_first_claim(driver, url):
     '''
     This function navigates to a given URL using a Selenium WebDriver, locates an HTML element containing 
@@ -109,10 +148,57 @@ def get_first_claim(driver, url):
     try:
         fst_claim_node = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, xpath_fst_claim)))
         fst_claim_text = fst_claim_node.text
-        #print(fst_claim_node.text)
-        return fst_claim_text if fst_claim_text.strip() else None
+        return fst_claim_text.strip() if fst_claim_text else None
     except Exception as e:
         print(f"Error scraping first claim from {url}: {e}")
+        return None
+
+
+
+def get_CPC_classes_from_HTML_node(node_text, url):
+    ''' 
+    This function is used inside the get_CPC_classes() function.
+    Extracts patent CPC classes from the text of the HTML element of classificaiton viewr.
+    '''
+    try:
+        CPC_classes = []
+        # Split the text into rows using newline characters as delimiters
+        rows = re.split(r'\n', node_text) 
+        for row in rows:
+            # Use a regular expression to search for a pattern that matches patent IDs in each row
+            match = re.search(r'^[A-Z][\d]{2}[A-Z]\d*\/\d*\s?', row)
+            if match:
+                CPC_class = match.group().rstrip(' ')
+                #print(CPC_class)
+                CPC_classes.append(CPC_class)
+        return CPC_classes
+    except Exception as e:
+        print(f"Error processing HTML element for CPC classes {url}: {e}")
+        return None
+
+
+
+def get_CPC_classes(driver, url):
+    '''
+    This function navigates to a given URL and clicks on a thumbnail to open a full classification viewer.
+    It then locates the expanded classification viewer using a specified XPath, extracts the text,
+    and then parses it to return the CPC classes. 
+    '''
+    # Navigate to the given URL
+    driver.get(url)
+    # Define the Xpath to find the thumbnail of the classification viewer.
+    # Then click the thumbnail to view more classifications.
+    thumbnail_xpath  = '/html/body/search-app/search-result/search-ui/div/div/div/div/div/result-container/patent-result/div/div/div/div[1]/div[1]/section[3]/classification-viewer/div/div/div[1]'
+    thumbnail = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, thumbnail_xpath)))
+    thumbnail.click() # this is necessary to get all the classifications 
+    # Define the Xpath to point the HTML node where CPC classes are contained.
+    xpath_CPC_classes = '/html/body/search-app/search-result/search-ui/div/div/div/div/div/result-container/patent-result/div/div/div/div[1]/div[1]/section[3]'
+    try:
+        CPC_node = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, xpath_CPC_classes)))
+        CPC_classes = get_CPC_classes_from_HTML_node(CPC_node.text, url)
+        return CPC_classes
+    except Exception as e:
+        print(f"Error scraping CPC classes from {url}: {e}")
         return None
 
 
@@ -129,7 +215,6 @@ def get_front_img_url(driver, url):
     thumbnail_xpath  = '/html/body/search-app/search-result/search-ui/div/div/div/div/div/result-container/patent-result/div/div/div/div[1]/div[1]/section[2]/image-carousel/div/img[1]'
     thumbnail = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, thumbnail_xpath)))
     thumbnail.click() # this is necessary not to get preview images (small and blurry)
-
     # Define the Xpath to point the HTML node of the full image viewer where the front image url is loacated.
     xpath_front_img = '/html/body/search-app/search-result/search-ui/div/div/div/div/div/result-container/patent-result/div/div[2]/div[2]/image-viewer/div/div[2]/div[1]/img'
     try:
