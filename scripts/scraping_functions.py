@@ -73,7 +73,7 @@ def get_patent_PN_from_HTML_node(node_text, url):
                     citations.append(patent_PN)
         return citations_by_examiner, citations
     except Exception as e:
-        print(f"Error processing HTML element for citations of {url}: {e}")
+        #print(f"Error processing HTML element for citations for: {url} Messag: {e}")
         return None
 
 
@@ -93,7 +93,7 @@ def get_citations(driver, url):
         citations = get_patent_PN_from_HTML_node(citations_node.text, url)
         return citations
     except Exception as e:
-        print(f"Error scraping citations from {url}: {e}")
+        #print(f"Error scraping citations from: {url} Message: {e}")
         return None
 
 
@@ -112,7 +112,7 @@ def get_title(driver, url):
         title_text = title_node.text
         return title_text.strip() if title_text else None
     except Exception as e:
-        print(f"Error scraping title from {url}: {e}")
+        #print(f"Error scraping title from: {url} Message: {e}")
         return None
 
 
@@ -131,7 +131,7 @@ def get_abstract(driver, url):
         abstract_text = abstract_node.text
         return abstract_text.strip() if abstract_text else None
     except Exception as e:
-        print(f"Error scraping abstract from {url}: {e}")
+        #print(f"Error scraping abstract from: {url} Message: {e}")
         return None
 
 
@@ -150,7 +150,7 @@ def get_first_claim(driver, url):
         fst_claim_text = fst_claim_node.text
         return fst_claim_text.strip() if fst_claim_text else None
     except Exception as e:
-        print(f"Error scraping first claim from {url}: {e}")
+        #print(f"Error scraping first claim from: {url} Message: {e}")
         return None
 
 
@@ -165,7 +165,7 @@ def get_CPC_classes_from_HTML_node(node_text, url):
         # Split the text into rows using newline characters as delimiters
         rows = re.split(r'\n', node_text) 
         for row in rows:
-            # Use a regular expression to search for a pattern that matches patent IDs in each row
+            # Use a regular expression to search for a pattern that matches the CPC class in each row
             match = re.search(r'^[A-Z][\d]{2}[A-Z]\d*\/\d*\s?', row)
             if match:
                 CPC_class = match.group().rstrip(' ')
@@ -173,7 +173,7 @@ def get_CPC_classes_from_HTML_node(node_text, url):
                 CPC_classes.append(CPC_class)
         return CPC_classes
     except Exception as e:
-        print(f"Error processing HTML element for CPC classes {url}: {e}")
+        #print(f"Error processing HTML element for CPC classes for: {url} Message: {e}")
         return None
 
 
@@ -186,22 +186,32 @@ def get_CPC_classes(driver, url):
     '''
     # Navigate to the given URL
     driver.get(url)
+    
     # Define the Xpath to find the thumbnail of the classification viewer.
-    # Then click the thumbnail to view more classifications.
     thumbnail_xpath  = '/html/body/search-app/search-result/search-ui/div/div/div/div/div/result-container/patent-result/div/div/div/div[1]/div[1]/section[3]/classification-viewer/div/div/div[1]'
-    thumbnail = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, thumbnail_xpath)))
-    thumbnail.click() # this is necessary to get all the classifications 
-    # Define the Xpath to point the HTML node where CPC classes are contained.
+    # Define the Xpath to point the HTML node where CPC classes are contained
     xpath_CPC_classes = '/html/body/search-app/search-result/search-ui/div/div/div/div/div/result-container/patent-result/div/div/div/div[1]/div[1]/section[3]'
+    
     try:
+        # Try to click the thumbnail
+        try:
+            thumbnail = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, thumbnail_xpath)))
+            thumbnail.click() # # Click the thumbnail to expand the classification viewer
+        except Exception as e:
+            #print(f"Could not click CPC thumbnail for: {url}")
+            # Continue execution even if click fails
+            pass 
+
+        # try to Get CPC classes regardless of whether the click succeeded, because some patents may not have the classification viewer.
         CPC_node = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, xpath_CPC_classes)))
         CPC_classes = get_CPC_classes_from_HTML_node(CPC_node.text, url)
+        #print(f"Succesfully retrieved CPC class for: {url}")
         return CPC_classes
+    
     except Exception as e:
-        print(f"Error scraping CPC classes from {url}: {e}")
+        #print(f"Error scraping CPC classes from: {url} Message: {e}")
         return None
-
-
+        
 
 def get_front_img_url(driver, url):
     '''
@@ -210,14 +220,14 @@ def get_front_img_url(driver, url):
     '''
     # Navigate to the given URL
     driver.get(url) 
-    # Define the Xpath to find the thumbnail of the full image viewer.
-    # Then click the thumbnail to open the full image viewer.
+    # Define the Xpath to the thumbnail of the full image viewer.
     thumbnail_xpath  = '/html/body/search-app/search-result/search-ui/div/div/div/div/div/result-container/patent-result/div/div/div/div[1]/div[1]/section[2]/image-carousel/div/img[1]'
-    thumbnail = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, thumbnail_xpath)))
-    thumbnail.click() # this is necessary not to get preview images (small and blurry)
     # Define the Xpath to point the HTML node of the full image viewer where the front image url is loacated.
     xpath_front_img = '/html/body/search-app/search-result/search-ui/div/div/div/div/div/result-container/patent-result/div/div[2]/div[2]/image-viewer/div/div[2]/div[1]/img'
     try:
+        # Try to click the thumbnail if it exists
+        thumbnail = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, thumbnail_xpath)))
+        thumbnail.click() # # Click to open full image viewer
         front_img_node = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, xpath_front_img)))
         front_img_url = front_img_node.get_attribute('src')
         if front_img_url:
@@ -227,7 +237,7 @@ def get_front_img_url(driver, url):
             print(f"Image URL not found for: {url}")
             return None
     except Exception as e:
-        print(f"Error scraping front img URL from: {url}: {e}")
+        #print(f"Error getting front img URL from: {url} Message: {e}")
         return None
 
 
@@ -240,24 +250,25 @@ def download_img(driver, url, filename, save_dir):
     '''
     try:
         front_img_url = get_front_img_url(driver, url)
-        os.makedirs(save_dir, exist_ok=True)
-        filename = f'{filename}.png'
-        filepath = os.path.join(save_dir, filename)
+        if front_img_url:
+            os.makedirs(save_dir, exist_ok=True)
+            filename = f'{filename}.png'
+            filepath = os.path.join(save_dir, filename)
+            
+            # Download the image
+            response = requests.get(front_img_url, stream=True)
+            response.raise_for_status() 
+            
+            # Save the image
+            with open(filepath, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+            #print(f"Successfully downloaded image to: {filepath}")
+            return filepath
         
-        # Download the image
-        response = requests.get(front_img_url, stream=True)
-        response.raise_for_status() 
-        
-        # Save the image
-        with open(filepath, 'wb') as f:
-            for chunk in response.iter_content(chunk_size=8192):
-                if chunk:
-                    f.write(chunk)
-        #print(f"Successfully downloaded image to: {filepath}")
-        return filepath
-    
     except Exception as e:
-        #print(f"Error downloading image from: {url}: {e}")
+        #print(f"Error downloading image from: {url} Message: {e}")
         return None
 
 
