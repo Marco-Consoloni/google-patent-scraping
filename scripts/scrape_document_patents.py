@@ -11,11 +11,11 @@ def scrape_documents_from_query(json_file_path, front_imgs_dir_output, json_dir_
     
     Parameters:
     - json_file_path (str): The path to the input JSON file containing patent data of a query patent.
-    - front_imgs_dir (str): Directory where front images of patents will be saved.
-    - json_dir (str): Directory where the scraped patent data will be saved as a JSON file.
+    - front_imgs_dir_output (str): Directory where front images of document patents will be saved.
+    - json_dir_output (str): Directory where patent data of the document patents  will be saved as a JSON file.
 
     This function reads patent query data from a JSON file, extracts citation information.
-    Then, for each cited patent, it scrapes patent data and downloads the corresponding front image.
+    Then, for each cited patent (document patentens), it scrapes patent data and downloads the corresponding front image.
     """
 
     # Determine the CPC class of the corresponding query from the directory structure of the JSON file path
@@ -39,7 +39,7 @@ def scrape_documents_from_query(json_file_path, front_imgs_dir_output, json_dir_
         citations_list = query_patent_data.get('citations_by_examiner') # Retrieve the list of patent IDs cited by the examiner.
         print(f'\nStarting scraping for query: {query_patent_ID}')
 
-        # Initialize a counter to keep track of the number of document patents successfully retrieved
+        # Initialize a counter to keep track of the number of document patents successfully scraped
         retrieved_count = 0 
 
         # Check if citations list is not empty
@@ -133,11 +133,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Scrape document patents associated to query patents and save JSON files.')
 
     parser.add_argument('--json_dir_input', type=str, default='/vast/marco/Data_Google_Patent/json/query',
-                        help='Directory to read JSON files.')
+                        help='Directory to read JSON files of the query patents.')
     parser.add_argument('--front_imgs_dir_output', type=str, default='/vast/marco/Data_Google_Patent/front_imgs/document',
-                        help='Directory to save front images.')
+                        help='Directory to save front images of the document patents.')
     parser.add_argument('--json_dir_output', type=str, default='/vast/marco/Data_Google_Patent/json/document',
-                        help='Directory to save JSON files.')
+                        help='Directory to save JSON files of the document patents.')
     parser.add_argument('--CPC_to_exclude', type=list, default=['A62B18', 'F04D17', 'F16H1', 'F16L1', 'G02C5','H02K19'],
                         help="CPC file to exclude when resuming scraping. Example: ['A42B3', 'A62B18', 'F04D17', 'F16H1', 'F16L1', 'G02C5','H02K19']")
     args = parser.parse_args()  
@@ -156,6 +156,5 @@ for CPC_dir in os.listdir(args.json_dir_input):
         json_file_path = os.path.join(CPC_dir_path, json_file)
         scrape_documents_from_query(json_file_path, args.front_imgs_dir_output, args.json_dir_output)
     print(f'Completed scraping for CPC: {CPC_dir}')
-        
 
-            
+    
