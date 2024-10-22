@@ -3,18 +3,18 @@ import json
 import argparse
 from scraping_functions import setup_driver, get_citations, get_title, get_abstract, get_CPC_classes, get_first_claim, download_img
 
-def scrape_queries_from_CPC(CPC_file_path, front_imgs_dir, json_dir):
+def scrape_queries_from_CPC(CPC_file_path, front_imgs_dir_output, json_dir_output):
     """
     Scrape patent data for a given CPC class from Google Patents and save a JSON file for each patent of the CPC class.
 
     Parameters:
     - CPC_file_path (str): The file path containing the list of patent IDs belonging to a specific CPC class.
-    - front_imgs_dir (str): Directory where front images of patents will be saved.
-    - json_dir (str): Directory where the scraped patent data will be saved as a JSON file.
+    - front_imgs_dir_output (str): Directory where front images of patents will be saved.
+    - json_dir_output (str): Directory where the scraped patent data will be saved as a JSON file.
 
-    This function reads patent IDs from the specified CPC class file, scrapes data such as
-    citations, first claims, and front images from Google Patents for each patent, and stores
-    the results in a dictionary. The dictionary is then saved to a JSON file corresponding to the patent ID.
+    This function reads patent IDs from the specified CPC class file, scrapes patent data such as
+    citations, first claims, and front images from Google Patents for each query patent, and stores
+    the results in a dictionary. The dictionary is then saved to a JSON file corresponding to the patent ID of the query patent.
     """
 
     # Initialize WebDriver
@@ -25,11 +25,11 @@ def scrape_queries_from_CPC(CPC_file_path, front_imgs_dir, json_dir):
             CPC_class = os.path.splitext(os.path.basename(CPC_file_path))[0]
             
             # Create the json directory for the CPC class
-            json_dir_CPC = os.path.join(json_dir, CPC_class)
+            json_dir_CPC = os.path.join(json_dir_output, CPC_class)
             os.makedirs(json_dir_CPC, exist_ok=True)
 
             # Create the front img directory for the CPC class
-            front_imgs_dir_CPC = os.path.join(front_imgs_dir, CPC_class)
+            front_imgs_dir_CPC = os.path.join(front_imgs_dir_output, CPC_class)
             os.makedirs(front_imgs_dir_CPC, exist_ok=True)
 
             # Iterate the patents of the CPC class (one patent ID per line)
@@ -109,31 +109,32 @@ def scrape_queries_from_CPC(CPC_file_path, front_imgs_dir, json_dir):
 
 if __name__ == "__main__":
 
-    # Set up argument parser
-    parser = argparse.ArgumentParser(description='Scrape Google Patents and save patent data for queries as JSON.')
-    parser.add_argument('--CPC_class_dir', type=str, default='/home/fantoni/marco/google-patent-scraping/CPC_class',
-                        help='Directory containing CPC files, each storing patent IDs for a specific CPC class.')
-    parser.add_argument('--front_imgs_dir', type=str, default='/vast/marco/Data_Google_Patent/front_imgs/query',
-                        help='Directory to save front images.')
-    parser.add_argument('--json_dir', type=str, default='/vast/marco/Data_Google_Patent/json/query',
-                        help='Directory to save JSON files.')
-    parser.add_argument('--CPC_to_exclude', type=list, default=['A42B3.txt', 'A62B18.txt', 'F04D17.txt', 'F16H1.txt', 'F16L1.txt', 'G02C5.txt','H02K19.txt'], 
-                        help="list of CPC file to exclude when resuming scraping. Example: ['A42B3.txt', 'F04D17.txt', 'G02C5.txt']")
+    parser = argparse.ArgumentParser(description='Scrape Google Patents and save patent data for query patents as JSON.')
 
-    args = parser.parse_args()  # Parse command-line arguments.
+    parser.add_argument('--CPC_class_dir', type=str, default='/home/fantoni/marco/google-patent-scraping/CPC_class',
+                        help='Directory containing CPC files, each storing patent IDs of query patents for a specific CPC class.')
+    parser.add_argument('--front_imgs_dir_output', type=str, default='/vast/marco/Data_Google_Patent/front_imgs/query',
+                        help='Directory to save front images of query patents.')
+    parser.add_argument('--json_dir_output', type=str, default='/vast/marco/Data_Google_Patent/json/query',
+                        help='Directory to save JSON files of query patents.')
+    parser.add_argument('--CPC_to_exclude', type=list, default=['A62B18.txt', 'F04D17.txt', 'F16H1.txt', 'F16L1.txt', 'G02C5.txt','H02K19.txt'], 
+                        help="list of CPC file to exclude when resuming scraping. Example: ['A42B3.txt', 'A62B18.txt', 'F04D17.txt', 'F16H1.txt', 'F16L1.txt', 'G02C5.txt','H02K19.txt']")
+
+    args = parser.parse_args() 
 
     # Get the list of all CPC files in the directory provided by the user.
     # Then iterate over the CPC files (each file corresponds to a specific CPC class).
     CPC_files = os.listdir(args.CPC_class_dir)
     for CPC_file in CPC_files:
+        CPC_file_path = os.path.join(args.CPC_class_dir, CPC_file)
+
         if CPC_file in args.CPC_to_exclude:
             print(f'CPC: {CPC_file} already scraped.')
             continue
 
-        CPC_file_path = os.path.join(args.CPC_class_dir, CPC_file)
-        print(f'\nStarting scraping for CPC: {CPC_file} -------------------')
-        scrape_queries_from_CPC(CPC_file_path, args.front_imgs_dir, args.json_dir)
-        print(f'Completed scraping for CPC: {CPC_file} -------------------')
+        print(f'\nStarting scraping for CPC: {CPC_file}')
+        scrape_queries_from_CPC(CPC_file_path, args.front_imgs_dir_output, args.json_dir_output)
+        print(f'Completed scraping for CPC: {CPC_file}')
 
             
 
