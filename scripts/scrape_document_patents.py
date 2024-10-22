@@ -5,7 +5,7 @@ from scraping_functions import setup_driver, get_title, get_abstract, get_CPC_cl
 import random
 
 
-def scrape_documents_from_query(json_file_path, front_imgs_dir, json_dir): 
+def scrape_documents_from_query(json_file_path, front_imgs_dir_output, json_dir_output): 
     """
     Scrapes patent documents based on citations from the specified JSON file.
     
@@ -22,11 +22,11 @@ def scrape_documents_from_query(json_file_path, front_imgs_dir, json_dir):
     CPC_class = os.path.dirname(json_file_path).split(os.path.sep)[-1]
 
     # Create the output directory for JSON files based on the CPC class
-    json_dir_CPC = os.path.join(json_dir, CPC_class)
+    json_dir_CPC = os.path.join(json_dir_output, CPC_class)
     os.makedirs(json_dir_CPC, exist_ok=True)
 
     # Create the output directory for front images based on the CPC class
-    front_imgs_dir_CPC = os.path.join(front_imgs_dir, CPC_class)
+    front_imgs_dir_CPC = os.path.join(front_imgs_dir_output, CPC_class)
     os.makedirs(front_imgs_dir_CPC, exist_ok=True)
 
     # Initialize WebDriver
@@ -40,7 +40,7 @@ def scrape_documents_from_query(json_file_path, front_imgs_dir, json_dir):
         print(f'\nStarting scraping for query: {query_patent_ID}')
 
         # Initialize a counter to keep track of the number of document patents successfully retrieved
-        retrieved_patents_count = 0 
+        retrieved_count = 0 
 
         # Check if citations list is not empty
         if len(citations_list) > 0:
@@ -58,7 +58,7 @@ def scrape_documents_from_query(json_file_path, front_imgs_dir, json_dir):
                 # Ensure patent ID has not been scraped yet
                 if os.path.exists(json_filepath):
                     print(f"{document_patent_ID} already scraped.")
-                    retrieved_patents_count += 1 # Increment the count of successfully retrieved document patents
+                    retrieved_count += 1 # Increment the count of successfully retrieved document patents
                     continue
 
                 # List of scraping functions with their arguments 
@@ -114,59 +114,48 @@ def scrape_documents_from_query(json_file_path, front_imgs_dir, json_dir):
                         #print(f'{document_patent_ID} successfully scraped.')
                         
                     # Increment the count of successfully retrieved document patents
-                    retrieved_patents_count += 1
-
+                    retrieved_count += 1
+                                
                 else:
                     print(f"{document_patent_ID} from: {url} not succesfully scraped due to an earlier failure.")
-                
-            # After processing all the cited patents, update the query patent data with the count of successfully retrieved document patents
-            query_patent_data['document_patents_count'] = retrieved_patents_count
-
-            # Write the updated query patent data back to the original JSON file
-            with open(json_file_path, 'w') as file:
-                json.dump(query_patent_data, file, indent=2)
-                # Print a summary of the results, showing how many patents were successfully scraped for the query patent
-                print(f"N. of scraped document patents is: {retrieved_patents_count}\t"
-                    f"{retrieved_patents_count}/{len(citations_list_rand)}\t"
-                    f"{retrieved_patents_count * 100 / len(citations_list_rand):.2f}%"
-                    "\nScraping completed.")
+            
+            # Print a summary of the results, showing how many patents were successfully scraped for the query patent
+            print(f"\nScraping completed. N. of scraped document patents is: {retrieved_count}\t"
+                    f"{retrieved_count}/{len(citations_list_rand)}\t"
+                    f"{retrieved_count * 100 / len(citations_list_rand):.2f}%")
+                     
         else:
             print(f'No citations by examiner found for: {query_patent_ID}')
-            query_patent_data['document_patents_count'] = 0 # updated query patent data
-            # Write the updated query patent data back to the original JSON file
-            with open(json_file_path, 'w') as file:
-                json.dump(query_patent_data, file, indent=2)
+
 
 if __name__ == "__main__":
 
-    # Set up argument parser
-    parser = argparse.ArgumentParser(description='Scrape Google Patents and save patent data for documents as JSON.')
+    parser = argparse.ArgumentParser(description='Scrape document patents associated to query patents and save JSON files.')
+
     parser.add_argument('--json_dir_input', type=str, default='/vast/marco/Data_Google_Patent/json/query',
                         help='Directory to read JSON files.')
-    parser.add_argument('--front_imgs_dir', type=str, default='/vast/marco/Data_Google_Patent/front_imgs/document',
+    parser.add_argument('--front_imgs_dir_output', type=str, default='/vast/marco/Data_Google_Patent/front_imgs/document',
                         help='Directory to save front images.')
     parser.add_argument('--json_dir_output', type=str, default='/vast/marco/Data_Google_Patent/json/document',
                         help='Directory to save JSON files.')
-    parser.add_argument('--CPC_to_exclude', type=list, default=['A42B3', 'A62B18', 'F04D17', 'F16H1', 'F16L1', 'G02C5','H02K19'],
-                        help="CPC file to exclude when resuming scraping. Example: ['A42B3', 'F04D17', 'G02C5']")
-
-    args = parser.parse_args()  # Parse command-line arguments.
+    parser.add_argument('--CPC_to_exclude', type=list, default=['A62B18', 'F04D17', 'F16H1', 'F16L1', 'G02C5','H02K19'],
+                        help="CPC file to exclude when resuming scraping. Example: ['A42B3', 'A62B18', 'F04D17', 'F16H1', 'F16L1', 'G02C5','H02K19']")
+    args = parser.parse_args()  
 
 # Iterate through each CPC directory within the input JSON directory
 for CPC_dir in os.listdir(args.json_dir_input):
+    CPC_dir_path = os.path.join(args.json_dir_input, CPC_dir)
+
     if CPC_dir in args.CPC_to_exclude:
         print(f'CPC: {CPC_dir} already scraped.')
         continue
     
-    CPC_dir_path = os.path.join(args.json_dir_input, CPC_dir)
-    print(f'\nStarting scraping for CPC: {CPC_dir} ------------------')
-
     # Iterate through each JSON file in the current CPC directory.
+    print(f'\nStarting scraping for CPC: {CPC_dir}')
     for json_file in os.listdir(CPC_dir_path):
         json_file_path = os.path.join(CPC_dir_path, json_file)
-        scrape_documents_from_query(json_file_path, args.front_imgs_dir, args.json_dir_output)
-
-    print(f'Completed scraping for CPC: {CPC_dir} ------------------')
+        scrape_documents_from_query(json_file_path, args.front_imgs_dir_output, args.json_dir_output)
+    print(f'Completed scraping for CPC: {CPC_dir}')
         
 
             
