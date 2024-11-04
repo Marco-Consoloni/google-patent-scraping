@@ -7,7 +7,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Parsing filenames of document patents get succesfully scraped patents for each query and save JSON for each CPC class.') 
 
-    parser.add_argument('--json_dir_input', type=str, default='/vast/marco/Data_Google_Patent/json/document',
+    parser.add_argument('--json_dir_input', type=str, default='/vast/marco/Data_Google_Patent/json/document/',
                         help='Directory to read JSON files for document patents.')
     parser.add_argument('--output_dir', type=str, default='/vast/marco/Data_Google_Patent/ground_truth',
                         help='Directory to save JSON files witth gorund truth.')
@@ -23,15 +23,13 @@ if __name__ == "__main__":
 
         # Iterate over the doument patents in a CPC class
         for doc in os.listdir(CPC_class_path):
-
-            # Split filename to get query ID
-            query_id = doc.split("_")[0] 
-
+            doc_id = doc.replace('.json', '')
+            query_id = f"{doc_id.split('_')[0]}_{doc_id.split('_')[1]}"
             # Check if the query ID is already a key in the dictionary
             if query_id in query_doc_truth:
-                query_doc_truth[query_id].append(doc.replace(".json", ""))
+                query_doc_truth[query_id].append(doc_id)
             else:
-                query_doc_truth[query_id] = [doc.replace(".json", "")]
+                query_doc_truth[query_id] = [doc_id]
 
         # Define the output path for this CPC class's JSON file
         output_file = os.path.join(args.output_dir, f"{CPC_class}.json")
