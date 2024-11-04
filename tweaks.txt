@@ -6,4 +6,3 @@ scrape_query_patents.py
     > cambiare funzione scrape_queries_from_CPC() e farla funzionare solo su un singolo documento non su tutta la CPC. 
     poi la funzione dopo sulla CPC.
     > fare un funzione che fa check dell'URL prima di mandarci sopra le altre funzioni di scraping.
-
