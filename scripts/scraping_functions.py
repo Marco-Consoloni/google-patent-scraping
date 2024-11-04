@@ -49,7 +49,7 @@ def setup_driver():
 
 
 
-def get_patent_PN_from_HTML_node(node_text, url):
+def get_patent_PN_from_citation_node(node_text, url):
     ''' 
     This function is used inside the get_citations() function.
     Extracts patent Publication Numbers (PN) from the text of the HTML element of citations and divide them 
@@ -71,9 +71,10 @@ def get_patent_PN_from_HTML_node(node_text, url):
                     citations_by_examiner.append(patent_PN.rstrip(' *'))
                 else:
                     citations.append(patent_PN)
+
         return citations_by_examiner, citations
     except Exception as e:
-        #print(f"Error processing HTML element for citations for: {url} Messag: {e}")
+        #print(f"Error processing HTML node for citations for: {url} Messag: {e}")
         return None
 
 
@@ -87,11 +88,15 @@ def get_citations(driver, url):
     # Navigate to the given URL
     driver.get(url)  
     # Define the Xpath to point the HTML node where patent citations are listed.
+    xpath_citations_title ='/html/body/search-app/search-result/search-ui/div/div/div/div/div/result-container/patent-result/div/div/div/div[3]/h3[1]'
     xpath_citations = '/html/body/search-app/search-result/search-ui/div/div/div/div/div/result-container/patent-result/div/div/div/div[3]/div[1]'
     try:
-        citations_node = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, xpath_citations)))
-        citations = get_patent_PN_from_HTML_node(citations_node.text, url)
-        return citations
+        citations_title_node = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, xpath_citations_title)))
+        # Ensure the section title for ""
+        if re.search(r'^Patent Citations', citations_title_node.text): 
+            citations_node = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, xpath_citations)))
+            citations = get_patent_PN_from_citation_node(citations_node.text, url)
+            return citations
     except Exception as e:
         #print(f"Error scraping citations from: {url} Message: {e}")
         return None
@@ -108,7 +113,7 @@ def get_title(driver, url):
     # Define the Xpath to point the HTML node where title text is contained.
     xpath_title = '/html/body/search-app/search-result/search-ui/div/div/div/div/div/result-container/patent-result/div/div[1]/div/h1'
     try:
-        title_node = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, xpath_title)))
+        title_node = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, xpath_title)))
         title_text = title_node.text
         return title_text.strip() if title_text else None
     except Exception as e:
@@ -127,7 +132,7 @@ def get_abstract(driver, url):
     # Define the Xpath to point the HTML node where title abstract is contained.
     xpath_abstract = '/html/body/search-app/search-result/search-ui/div/div/div/div/div/result-container/patent-result/div/div/div/div[1]/div[1]/section[1]/patent-text/div/section/abstract/div'
     try:
-        abstract_node = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, xpath_abstract)))
+        abstract_node = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, xpath_abstract)))
         abstract_text = abstract_node.text
         return abstract_text.strip() if abstract_text else None
     except Exception as e:
@@ -169,7 +174,6 @@ def get_CPC_classes_from_HTML_node(node_text, url):
             match = re.search(r'^[A-Z][\d]{2}[A-Z]\d*\/\d*\s?', row)
             if match:
                 CPC_class = match.group().rstrip(' ')
-                #print(CPC_class)
                 CPC_classes.append(CPC_class)
         return CPC_classes
     except Exception as e:
