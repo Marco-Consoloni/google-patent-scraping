@@ -1,3 +1,7 @@
+> ci sarebbe da fare che quando un patent fa break della pipeline (failure) me lo segno in un file, in modo che
+quando riprendo lo scraping, perhcè è crashiato, lui non prova a scraparlo di nuovo e skippa.
+Ora invece skippo solo quelli che ho scrapato correttamente perche li ho salavati in un file.
+
 scrape_query_patents.py
     > cambiare funzione scrape_queries_from_CPC() e farla funzionare solo su un singolo documento non su tutta la CPC. 
     poi la funzione dopo sulla CPC.

@@ -4,10 +4,9 @@ import argparse
 from scraping_functions import setup_driver, get_title, get_abstract, get_CPC_classes, get_first_claim, download_img
 import random
 
-
-def scrape_documents_from_query(json_file_path, front_imgs_dir_output, json_dir_output): 
+def scrape_documents_from_query(json_file_path, front_imgs_dir_output, json_dir_output, sample_size=5): 
     """
-    Scrapes patent documents based on citations from the specified JSON file.
+    Scrape patent documents based on citations from the specified JSON file.
     
     Parameters:
     - json_file_path (str): The path to the input JSON file containing patent data of a query patent.
@@ -20,12 +19,10 @@ def scrape_documents_from_query(json_file_path, front_imgs_dir_output, json_dir_
 
     # Determine the CPC class of the corresponding query from the directory structure of the JSON file path
     CPC_class = os.path.dirname(json_file_path).split(os.path.sep)[-1]
-
+    
     # Create the output directory for JSON files based on the CPC class
     json_dir_CPC = os.path.join(json_dir_output, CPC_class)
     os.makedirs(json_dir_CPC, exist_ok=True)
-
-    # Create the output directory for front images based on the CPC class
     front_imgs_dir_CPC = os.path.join(front_imgs_dir_output, CPC_class)
     os.makedirs(front_imgs_dir_CPC, exist_ok=True)
 
@@ -34,98 +31,81 @@ def scrape_documents_from_query(json_file_path, front_imgs_dir_output, json_dir_
     
     # Open the json file for the patent query
     with open(json_file_path, 'r') as file:
-        query_patent_ID = os.path.splitext(os.path.basename(json_file_path))[0]
-        query_patent_data = json.load(file)
-        citations_list = query_patent_data.get('citations_by_examiner') # Retrieve the list of patent IDs cited by the examiner.
-        print(f'\nStarting scraping for query: {query_patent_ID}')
-
-        # Initialize a counter to keep track of the number of document patents successfully scraped
-        retrieved_count = 0 
+        query_ID = os.path.splitext(os.path.basename(json_file_path))[0]
+        query_data = json.load(file)
+        citations_list = query_data.get('citations_by_examiner') # Retrieve the list of patent IDs cited by the examiner.
+        print(f'\nStarting scraping for query: {query_ID}')
 
         # Check if citations list is not empty
-        if len(citations_list) > 0:
-            # Get random elements from the citation list
-            sample_size = 5 # set a sample size
-            random.seed(1999) # set the seed for reproducibility
-            citations_to_sample = min(len(citations_list), sample_size) # If the citation list has fewer elements than sample_size, it will sample the entire list
-            citations_list_rand = random.sample(citations_list, citations_to_sample) 
+        if len(citations_list) >= sample_size:
+            random.seed(1999) 
+            random.shuffle(citations_list) # shuflle the citations lists to iterate randomly over the citation list.
+            scraped_count = 0 # initialize counter for successfully scraped patents
+            #citations_to_sample = min(len(citations_list), sample_size) # if the citation list has fewer elements than sample_size, it will sample the entire list
+            #citations_list_rand = random.sample(citations_list, citations_to_sample) # get random elements from the citation list
 
             # Iterate over each patent ID in the citations list
-            for document_patent_ID in citations_list_rand:
-                url = f"https://patents.google.com/patent/{document_patent_ID}/en?oq={document_patent_ID}" # Construct the Google Patents URL for the specific patent
-                json_filepath = os.path.join(json_dir_CPC, f'{query_patent_ID}_{document_patent_ID}.json') # Define the filename path for the output JSON file based on the patent ID
+            for patent_ID in citations_list:
+                url = f"https://patents.google.com/patent/{patent_ID}/en?oq={patent_ID}" # Construct the Google Patents URL for the specific patent
+                doc_ID = f'{query_ID}_{patent_ID}'
+                json_filepath = os.path.join(json_dir_CPC, f'{doc_ID}.json') # Define the filename path for the output JSON file based on the patent ID
 
                 # Ensure patent ID has not been scraped yet
                 if os.path.exists(json_filepath):
-                    print(f"{document_patent_ID} already scraped.")
-                    retrieved_count += 1 # Increment the count of successfully retrieved document patents
+                    print(f"{doc_ID} already scraped.")
+                    scraped_count += 1
                     continue
 
                 # List of scraping functions with their arguments 
-                functions_with_args = [
+                scraping_functions = [
                     (get_abstract, driver, url),
                     (get_title, driver, url),
                     (get_CPC_classes, driver, url),
                     (get_first_claim, driver, url),
-                    (download_img, driver, url, f'{query_patent_ID}_{document_patent_ID}', front_imgs_dir_CPC)
+                    (download_img, driver, url, doc_ID, front_imgs_dir_CPC)
                 ]
 
                 results = []
-                for func_tuple in functions_with_args:
-                    func = func_tuple[0]
-                    args = func_tuple[1:]
-
+                for func, *args in scraping_functions:
                     try:
                         result = func(*args)
                         assert result, f"Function: {func.__name__}() failed."
                         results.append(result)
-
                     except Exception as e:
                         # If any function fails, log the error and break the loop
                         print(f"Stopping execution due to failure in {func.__name__}().")
                         break 
 
                 # If all functions succeed, assign results and proceed
-                if len(results) == len(functions_with_args):
-                    
-                    # Unpack results
-                    abstract = results[0]
-                    title = results[1]
-                    CPC_classes = results[2]
-                    fst_claim = results[3]
-                    front_img_path = results[4]
-
-                    # Create the patent data if all functions were successful
+                if len(results) == len(scraping_functions):
+                    abstract, title, CPC_classes, fst_claim, front_img_path = results
                     document_patent_data = {
                         "type": "document",
-                        "query": json_file_path,
-                        "patent_ID": document_patent_ID,
-                        "class": CPC_class,
+                        "patent_ID": patent_ID,
+                        "query_ID": query_ID,
+                        "cls": CPC_class,
                         "title": title,
                         "abstract": abstract,
                         "CPC_class": CPC_classes,
                         "first_claim": fst_claim,
                         "front_img": front_img_path 
                     }
-
                     # Write the document patent data dictionary to a JSON file
                     with open(json_filepath, 'w') as json_file:
                         json.dump(document_patent_data, json_file, indent=2)
-                        #print(f'{document_patent_ID} successfully scraped.')
-                        
-                    # Increment the count of successfully retrieved document patents
-                    retrieved_count += 1
-                                
+                    
+                    # Increment the scraped count and check if target is reached
+                    scraped_count += 1
+                    if scraped_count == sample_size:
+                        print(f"Successfully scraped {scraped_count} patents, stopping further scraping for this query.")
+                        break
                 else:
-                    print(f"{document_patent_ID} from: {url} not succesfully scraped due to an earlier failure.")
-            
-            # Print a summary of the results, showing how many patents were successfully scraped for the query patent
-            print(f"\nScraping completed. N. of scraped document patents is: {retrieved_count}\t"
-                    f"{retrieved_count}/{len(citations_list_rand)}\t"
-                    f"{retrieved_count * 100 / len(citations_list_rand):.2f}%")
-                     
+                    print(f"{patent_ID} from: {url} not succesfully scraped due to an earlier failure.")
+
+            print(f"Scraping completed for query: {query_ID}")  
+
         else:
-            print(f'No citations by examiner found for: {query_patent_ID}')
+            print(f'No citations by examiner found for: {query_ID}')
 
 
 if __name__ == "__main__":
@@ -138,7 +118,7 @@ if __name__ == "__main__":
                         help='Directory to save front images of the document patents.')
     parser.add_argument('--json_dir_output', type=str, default='/vast/marco/Data_Google_Patent/json/document',
                         help='Directory to save JSON files of the document patents.')
-    parser.add_argument('--CPC_to_exclude', type=list, default=['A62B18', 'F04D17', 'F16H1', 'F16L1', 'G02C5','H02K19'],
+    parser.add_argument('--CPC_to_exclude', type=list, default=['A42B3', 'A62B18', 'F04D17', 'F16H1', 'F16L1', 'G02C5'],
                         help="CPC file to exclude when resuming scraping. Example: ['A42B3', 'A62B18', 'F04D17', 'F16H1', 'F16L1', 'G02C5','H02K19']")
     args = parser.parse_args()  
 
