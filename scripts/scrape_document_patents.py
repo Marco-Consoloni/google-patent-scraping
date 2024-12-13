@@ -42,8 +42,6 @@ def scrape_documents_from_query(json_file_path, front_imgs_dir_output, json_dir_
             random.seed(1999) 
             random.shuffle(citations_list) # shuflle the citations lists to iterate randomly over the citation list
             scraped_count = 0 # initialize counter for successfully scraped patents
-            #citations_to_sample = min(len(citations_list), sample_size) # if the citation list has fewer elements than sample_size, it will sample the entire list
-            #citations_list_rand = random.sample(citations_list, citations_to_sample) # get random elements from the citation list
 
             # Iterate over each patent ID in the citations list
             for patent_ID in citations_list:
@@ -126,7 +124,7 @@ if __name__ == "__main__":
                         help='Directory to save front images of the document patents.')
     parser.add_argument('--json_dir_output', type=str, default='/vast/marco/Data_Google_Patent/json/document',
                         help='Directory to save JSON files of the document patents.')
-    parser.add_argument('--CPC_to_exclude', type=list, default=['H02K19'],
+    parser.add_argument('--CPC_to_exclude', type=list, default=['A42B3', 'A62B18', 'F04D17', 'F16H1', 'F16L1', 'G02C5','H02K19'],
                         help="CPC file to exclude when resuming scraping. Example: ['A42B3', 'A62B18', 'F04D17', 'F16H1', 'F16L1', 'G02C5','H02K19']")
     args = parser.parse_args()  
 
