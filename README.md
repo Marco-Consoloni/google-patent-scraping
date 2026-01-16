@@ -1,6 +1,6 @@
 # Dataset for Multimodal Information Retrieval - Google Patent Scraping
 
-This repository provides scripts for constructing an evaluation dataset for multimodal information retrieval (IR). The pipeline enables the automatic creation of the dataset by scraping front-page images and first claims from Google Patents (https://patents.google.com/), , as illustrated in Fig. 1.
+This repository provides scripts for constructing an evaluation dataset for multimodal information retrieval (IR). The pipeline enables the automatic creation of a custom dataset by scraping front-page images and first claims from Google Patents (https://patents.google.com/), as illustrated in Fig. 1.
 
 ![example_scraping](assets/example_scraping.png)
 
