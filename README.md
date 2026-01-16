@@ -8,7 +8,7 @@ This repository provides scripts for constructing an evaluation dataset for mult
 
 We use existing patent citation metadata to establish query–document relationships: for each citing patent, its cited patents are retrieved and used as relevant documents. This approach allows the automatic generation of relevance labels, eliminating the need for costly and time-consuming manual annotation (see Fig. 2). This approach, applied jointly to patent images and textual content, is not currently supported by existing web service platforms such as Espacenet and the USPTO.
 
-![citations_by_examiner](assets/citations_by_examiner_red.png)
+![citations_by_examiner](assets/citations_by_examiner_final.png)
 
 **Fig. 2** - *Automatic construction of query–document relevance labels using patent citation metadata.*
 
